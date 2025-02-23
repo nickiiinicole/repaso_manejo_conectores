@@ -73,13 +73,58 @@ public class Exercises {
 
     }
 
+    public void darAltaAsignatura(int id, String name) {
+
+        String query = "INSERT INTO ASIGNATURAS (cod, nombre) VALUES (?,?)";
+        try (PreparedStatement pst = connection.prepareStatement(query)) {
+            pst.setInt(1, id);
+            pst.setString(2, name);
+
+            int rowsAffected = pst.executeUpdate();
+            System.out.println("Rows affected " + rowsAffected);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void darBajaAlumno(int id) {
+
+        String query = "DELETE FROM ALUMNOS WHERE codigo = ?  ";
+        try (PreparedStatement pst = connection.prepareStatement(query)) {
+            pst.setInt(1, id);
+
+            int rowAffected = pst.executeUpdate();
+            System.out.println("Rows affected " + rowAffected);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void darBajaAsignatura(int id) {
+
+        String query = "DELETE FROM ASIGNATURAS WHERE cod = ?  ";
+        try (PreparedStatement pst = connection.prepareStatement(query)) {
+            pst.setInt(1, id);
+
+            int rowAffected = pst.executeUpdate();
+            System.out.println("Rows affected " + rowAffected);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String[] args) {
 
         Exercises exercises = new Exercises();
         try {
             exercises.openConnection("add", "localhost", "root", "");
             exercises.consultaAlumnos("a");
-            exercises.darAltaAlumno("nicole", "diaz", 161, 21);
+            // exercises.darAltaAlumno("nicole", "diaz", 161, 21);
+            // exercises.darAltaAsignatura(9, "Empresa");
+            // exercises.darBajaAlumno(6);
+
+            
         } catch (Exception e) {
             e.printStackTrace();
         }
