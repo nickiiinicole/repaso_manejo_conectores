@@ -114,6 +114,8 @@ public class Exercises {
         }
     }
 
+    pub
+
     public static void main(String[] args) {
 
         Exercises exercises = new Exercises();
@@ -124,7 +126,7 @@ public class Exercises {
             // exercises.darAltaAsignatura(9, "Empresa");
             // exercises.darBajaAlumno(6);
 
-            
+
         } catch (Exception e) {
             e.printStackTrace();
         }
