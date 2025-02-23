@@ -114,7 +114,21 @@ public class Exercises {
         }
     }
 
-    pub
+    public void nombreAulasConAlumnos() {
+
+        String query = "select alumnos.nombre, aulas.nombreAula from alumnos JOIN aulas ON aulas.numero = alumnos.codigo; ";
+        try (Statement statement = connection.createStatement()) {
+            ResultSet resultSet = statement.executeQuery(query);
+            System.out.println("-----------------------------------------");
+            while (resultSet.next()) {
+                System.out.printf("Student: %s Class: %s %n", resultSet.getString(1), resultSet.getString(2));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+    }
+    
 
     public static void main(String[] args) {
 
@@ -125,8 +139,7 @@ public class Exercises {
             // exercises.darAltaAlumno("nicole", "diaz", 161, 21);
             // exercises.darAltaAsignatura(9, "Empresa");
             // exercises.darBajaAlumno(6);
-
-
+            exercises.nombreAulasConAlumnos();
         } catch (Exception e) {
             e.printStackTrace();
         }
