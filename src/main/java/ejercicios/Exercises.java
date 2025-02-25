@@ -435,6 +435,51 @@ public class Exercises {
 
     }
 
+    /**
+     * Realiza inserciones en ambas bases de datos.
+     * Si una falla, se deshacen los cambios en ambas.
+     * 
+     * @throws SQLException
+     */
+    public void insertarAmbasTablas(String nombreAula, int codigo, int puestos) throws SQLException {
+        String query = "INSERT INTO AULAS (numero, nombreAula, puestos) VALUES (?, ?, ?)";
+
+        // Desactivar autocommit en ambas bases de datos para manejar la transacción
+        // manualmente
+        connection.setAutoCommit(false);
+        connectionSQLite.setAutoCommit(false);
+
+        try (PreparedStatement pstMysql = connection.prepareStatement(query);
+                PreparedStatement pstSqlite = connectionSQLite.prepareStatement(query)) {
+
+            // Insertar en MariaDB
+            pstMysql.setInt(1, codigo);
+            pstMysql.setString(2, nombreAula);
+            pstMysql.setInt(3, puestos);
+            int rowsMysql = pstMysql.executeUpdate();
+
+            // Insertar en SQLite
+            pstSqlite.setInt(1, codigo);
+            pstSqlite.setString(2, nombreAula);
+            pstSqlite.setInt(3, puestos);
+            int rowsSqlite = pstSqlite.executeUpdate();
+
+            connection.commit();
+            connectionSQLite.commit();
+
+            System.out.println(
+                    "Inserciones exitosas. Filas afectadas: MariaDB = " + rowsMysql + ", SQLite = " + rowsSqlite);
+
+        } catch (SQLException e) {
+            connection.rollback();
+            connectionSQLite.rollback();
+            System.err.println("Error en la inserción, se han revertido los cambios: " + e.getMessage());
+        } finally {
+            connection.setAutoCommit(true);
+            connectionSQLite.setAutoCommit(true);
+        }
+    }
+
     public static void main(String[] args) {
 
         Exercises exercises = new Exercises();
