@@ -38,10 +38,10 @@ public class Exercises {
 
     public void openConnectionSQLite(String bd, String server, String user, String password) {
         try {
-            Class.forName("org.sqlite.Driver");
-            String url = String.format("jbdc:sqlite:", bd);
-            connectionSQLite = DriverManager.getConnection(url);
-            if (this.connection != null) {
+            // Class.forName("org.sqlite.Driver");
+            String url = String.format("jdbc:sqlite:", bd);
+            this.connectionSQLite = DriverManager.getConnection(url);
+            if (this.connectionSQLite != null) {
                 System.out.println("conectado a la " + bd);
             } else {
                 System.out.println("No conectado a " + bd);
@@ -49,8 +49,6 @@ public class Exercises {
 
         } catch (SQLException e) {
             e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-
         }
 
     }
@@ -391,16 +389,57 @@ public class Exercises {
         }
     }
 
-    public void insertarTabla() {
+    /***
+     * 
+     * Realiza un
+     * método que
+     * permita insertar
+     * datos en
+     * aulas en
+     * función de
+     * su código*
+     * aunque este
+     * 
+     * ya exista (no se puede usar update)
+     * 
+     * @param code
+     * @param name
+     * @param puesto
+     */
 
-        String query = "INSERT INTO AULAS (?,?,?)";
+    public void insertDataSQLite(int code, String name, int puesto) {
+
+        // coomo no puedo usar el update , vamos borrar si encuentra la clave , borramos
+        String queryExist = "DELETE FROM aulas where numero = ?  ";
+        try (PreparedStatement pst = connectionSQLite.prepareStatement(queryExist)) {
+            pst.setInt(1, code);
+            int rowAffected = pst.executeUpdate();
+            System.out.println("Rows affected " + rowAffected);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        String query = "INSERT INTO AULAS (numero, nombreAula, puestos) VALUES (?,?,?)";
+        try (PreparedStatement pst = connectionSQLite.prepareStatement(query)) {
+            pst.setInt(1, code);
+            pst.setString(2, name);
+            pst.setInt(3, puesto);
+
+            int rowAffected = pst.executeUpdate();
+            System.out.println("Rows affected " + rowAffected);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
     }
 
     public static void main(String[] args) {
 
         Exercises exercises = new Exercises();
         try {
-            exercises.openConnection("add", "localhost", "root", "");
+            // exercises.openConnection("add", "localhost", "root", "");
             exercises.openConnectionSQLite("add", "localhost", "root", "");
 
             // exercises.consultaAlumnos("a");
@@ -415,6 +454,8 @@ public class Exercises {
             // exercises.getColumns();
             // exercises.obtenerDatosConsulta();
             // exercises.buscarCadena("nicole", "add");
+            exercises.insertDataSQLite(11, "Matemáticas aplicadas", 10);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
