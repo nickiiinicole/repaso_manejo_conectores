@@ -1,19 +1,20 @@
 package ejercicios;
 
-import java.awt.Taskbar.State;
+import java.sql.CallableStatement;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-
-import org.checkerframework.checker.units.qual.s;
 
 public class Exercises {
 
     // declaro primero la conexion
     private Connection connection;
+    private Connection connectionSQLite;
 
     public void openConnection(String bd, String servidor, String usuario, String password)
             throws ClassNotFoundException {
@@ -33,6 +34,25 @@ public class Exercises {
             System.out.println("SQLState: " + e.getSQLState());
             System.out.println("Código error: " + e.getErrorCode());
         }
+    }
+
+    public void openConnectionSQLite(String bd, String server, String user, String password) {
+        try {
+            Class.forName("org.sqlite.Driver");
+            String url = String.format("jbdc:sqlite:", bd);
+            connectionSQLite = DriverManager.getConnection(url);
+            if (this.connection != null) {
+                System.out.println("conectado a la " + bd);
+            } else {
+                System.out.println("No conectado a " + bd);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+
+        }
+
     }
 
     /*
@@ -196,13 +216,193 @@ public class Exercises {
 
     }
 
-    
+    public void obtencionInfoBD() {
+        try {
+            DatabaseMetaData data = connection.getMetaData();
+            System.out.println("Driver: " + data.getDriverName());
+            System.out.println("Version Driver: " + data.getDriverVersion());
+            System.out.println("Url de conexion " + data.getURL());
+            System.out.println("name del SGBD " + data.getDatabaseProductName());
+            System.out.println("version del SGBD " + data.getDatabaseProductVersion());
+            System.out.println("Palabras reservadas en SGDB " + data.getSQLKeywords());
+
+            ResultSet catalogs = data.getCatalogs();
+            while (catalogs.next()) {
+                System.out.println("Catalogs " + catalogs.getString(1));
+
+            }
+
+            System.out.println("---------------TABLES------------");
+            ResultSet tables = data.getTables("add", null, null, null);
+            while (tables.next()) {
+                System.out.println("Nombre de la tabla " + tables.getString("TABLE_NAME"));
+                System.out.println("Tipo de tabla: " + tables.getString("TABLE_TYPE"));
+
+            }
+
+            System.out.println("-------------VIEWS---------------");
+            ResultSet views = data.getTables("add", null, null, new String[] { "VIEW" });
+            while (views.next()) {
+                System.out.println("Nombre de la vista " + views.getString("TABLE_NAME"));
+                System.out.println("Tipo de la tabla " + views.getString("TABLE_TYPE"));
+            }
+
+            System.out.println("----------------PROCEDIMIENTOS-------------");
+            ResultSet procedures = data.getProcedures("add", null, null);
+            while (procedures.next()) {
+                System.out.println("Nombre del procedimiento " + procedures.getString("PROCEDURE_NAME"));
+                System.out.println("Tipo de procedimiento " + procedures.getString("PROCEDURE_TYPE"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public void consultarAlumnosPatron(String patron) {
+
+        String query = "select * from alumnos where nombre like ?";
+        int counter = 0;
+        try (PreparedStatement pst = connection.prepareStatement(query)) {
+            pst.setString(1, "%" + patron + "%");
+            ResultSet resultSet = pst.executeQuery();
+
+            while (resultSet.next()) {
+                System.out.println("Nombre del alumno " + resultSet.getString("nombre"));
+                counter++;
+            }
+            System.out.println("Total de alumnos con ese patron  " + counter);
+        } catch (Exception e) {
+            // TODO: handle exception
+        }
+    }
+
+    public void getColumns() {
+        try {
+            DatabaseMetaData dbmt = connection.getMetaData();
+            int position = 0;
+            ResultSet columns = dbmt.getColumns("add", null, null, null);
+            while (columns.next()) {
+
+                System.out.println("Posicion de la columna " + position);
+                System.out.println("Nombre de la columna " + columns.getString("COLUMN_NAME"));
+                System.out.println("Nombre del tipo de dato de la columna" + columns.getString("TYPE_NAME"));
+                System.out.println("Tamaño de la columna " + columns.getString("COLUMN_SIZE"));
+                System.out.println("Si permite nulos " + columns.getString("NULLABLE"));
+                // System.out.println("Tabla " + columns.getMetaData().getTableName(position));
+                System.out.println("Si permite AUTOICNREMENTADOS " + columns.getString("IS_AUTOINCREMENT"));
+                System.out.println("-------------------------------------------------------");
+                position++;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    /**
+     * Queremos obtener los siguientes datos de las columnas devueltas por la
+     * consulta
+     * "select *, nombre as non from alumnos": Nombre de la columna, alias de la
+     * columna,
+     * nombre del tipo de dato usado en la columna, si es autoincrementado y si
+     * permite
+     * nulos
+     */
+    public void obtenerDatosConsulta() {
+
+        try (Statement st = connection.createStatement()) {
+
+            ResultSet rs = st.executeQuery("select  nombre as non from alumnos;");
+            ResultSetMetaData rsData = rs.getMetaData();
+            System.out.println("Nombre de la columna " + rsData.getColumnName(1));
+            System.out.println("Alias de la columna " + rsData.getColumnLabel(1));
+            System.out.println("Nombre del tipo de dato " + rsData.getColumnType(1));
+            System.out.println("Columna autoincrementable : " + rsData.isAutoIncrement(1));
+            System.out.println("Columna de nulos permite " + rsData.isNullable(1));
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /***
+     * Realiza un metodo que permita buscar una cadena de texto en cualquier columna
+     * de tiopo cahr o varchar
+     * de cualquier tabla de una base de datos dada, dee indicar la base de datos,
+     * tabla y columna donde se encontró la coincidencia, y el texto completo del
+     * campo
+     * 
+     * @param args
+     */
+
+    public void buscarCadena(String text, String bd) {
+        boolean encontrado = false;
+
+        try {
+            DatabaseMetaData metaData = connection.getMetaData();
+
+            ResultSet tables = metaData.getTables(bd, null, "%", new String[] { "TABLE" });
+
+            while (tables.next()) {
+                String tableName = tables.getString("TABLE_NAME");
+
+                ResultSet columns = metaData.getColumns(bd, null, tableName, "%");
+                while (columns.next()) {
+                    // Obtenemos el nombre y el tipo de la columna
+                    String columnName = columns.getString("COLUMN_NAME");
+                    String typeName = columns.getString("TYPE_NAME");
+
+                    // Comprobamos si el tipo es CHAR o VARCHAR (puedes ampliar a otros si lo
+                    // necesitas)
+                    if (typeName.equalsIgnoreCase("CHAR") || typeName.equalsIgnoreCase("VARCHAR")) {
+                        // Construimos una consulta dinámica para buscar la cadena en esta columna.
+                        // Notar el uso de comillas invertidas para evitar problemas con nombres
+                        // reservados.
+                        String query = String.format(
+                                "SELECT `%s` FROM `%s`.`%s` WHERE `%s` LIKE '%%%s%%'",
+                                columnName, bd, tableName, columnName, text);
+
+                        Statement stmt = connection.createStatement();
+                        ResultSet rs = stmt.executeQuery(query);
+
+                        // Recorremos los resultados
+                        while (rs.next()) {
+                            String fieldValue = rs.getString(columnName);
+                            if (fieldValue != null) {
+                                System.out.printf("Database: %s, Table: %s, Column: %s, Value: %s%n",
+                                        bd, tableName, columnName, fieldValue);
+                                encontrado = true;
+                            }
+                        }
+
+                        rs.close();
+                        stmt.close();
+                    }
+                }
+                columns.close();
+            }
+            tables.close();
+
+            if (!encontrado) {
+                System.out.println("No se encontró la cadena: " + text);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void insertarTabla() {
+
+        String query = "INSERT INTO AULAS (?,?,?)";
+    }
 
     public static void main(String[] args) {
 
         Exercises exercises = new Exercises();
         try {
             exercises.openConnection("add", "localhost", "root", "");
+            exercises.openConnectionSQLite("add", "localhost", "root", "");
+
             // exercises.consultaAlumnos("a");
             // exercises.darAltaAlumno("nicole", "diaz", 161, 21);
             // exercises.darAltaAsignatura(9, "Empresa");
@@ -210,7 +410,11 @@ public class Exercises {
             // exercises.nombreAulasConAlumnos();
             // exercises.nombreAlumnoAprobado();
             // exercises.nombreAlumnoPatronAltura("nicole", 159);
-
+            // exercises.obtencionInfoBD();
+            // exercises.consultarAlumnosPatron("n");
+            // exercises.getColumns();
+            // exercises.obtenerDatosConsulta();
+            // exercises.buscarCadena("nicole", "add");
         } catch (Exception e) {
             e.printStackTrace();
         }
